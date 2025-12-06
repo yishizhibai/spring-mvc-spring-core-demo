@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件管理系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+        }
+
+        /* 头部样式 */
+        .header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        /* 操作栏样式 */
+        .operation-bar {
+            background-color: white;
+            padding: 20px 30px;
+            margin: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .search-box input {
+            width: 300px;
+            padding: 10px 15px;
+            border: 1px solid #e1e4e8;
+            border-radius: 4px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .search-box input:focus {
+            border-color: #3498db;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+
+        .btn-success {
+            background-color: #2ecc71;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: #27ae60;
+        }
+
+        /* 文件列表样式 */
+        .file-container {
+            margin: 0 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+
+        .file-stats {
+            padding: 15px 30px;
+            border-bottom: 1px solid #f0f2f5;
+            display: flex;
+            gap: 30px;
+            color: #666;
+        }
+
+        .file-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .file-table th {
+            background-color: #f8f9fa;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: #444;
+            border-bottom: 1px solid #e1e4e8;
+        }
+
+        .file-table td {
+            padding: 15px;
+            border-bottom: 1px solid #f0f2f5;
+            color: #555;
+        }
+
+        .file-table tr:hover {
+            background-color: #f9f9f9;
+        }
+
+        .file-type {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .file-type-img {
+            background-color: #e8f4fd;
+            color: #3498db;
+        }
+
+        .file-type-doc {
+            background-color: #f0f8fb;
+            color: #2980b9;
+        }
+
+        .btn-download {
+            background-color: #1abc9c;
+            color: white;
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        .btn-download:hover {
+            background-color: #16a085;
+        }
+
+        /* 空数据样式 */
+        .empty-data {
+            padding: 80px 0;
+            text-align: center;
+            color: #999;
+            font-size: 16px;
+        }
+
+        /* 上传弹窗样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            width: 500px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+
+        .modal-content h3 {
+            margin-bottom: 20px;
+            font-size: 18px;
+            color: #333;
+        }
+
+        .file-input {
+            margin: 15px 0;
+            padding: 20px;
+            border: 2px dashed #e1e4e8;
+            border-radius: 4px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+
+        .file-input:hover {
+            border-color: #3498db;
+        }
+
+        .file-input input {
+            display: none;
+        }
+
+        .modal-footer {
+            margin-top: 20px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .btn-close {
+            background-color: #95a5a6;
+            color: white;
+        }
+
+        .btn-close:hover {
+            background-color: #7f8c8d;
+        }
+
+        /* 提示信息样式 */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 4px;
+            color: white;
+            z-index: 1001;
+            display: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .toast-success {
+            background-color: #2ecc71;
+        }
+
+        .toast-error {
+            background-color: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+<!-- 头部 -->
+<div class="header">
+    <h1>文件管理系统</h1>
+</div>
+
+<!-- 操作栏 -->
+<div class="operation-bar">
+    <div class="search-box">
+        <input type="text" id="searchInput" placeholder="请输入文件名搜索（不含后缀）" th:value="${searchName}">
+        <button class="btn btn-primary" onclick="searchFile()">搜索</button>
+    </div>
+    <button class="btn btn-success" onclick="openUploadModal()">上传文件</button>
+</div>
+
+<!-- 文件列表容器 -->
+<div class="file-container">
+    <div class="file-stats">
+        <div>总文件数：<span th:text="${totalCount}">0</span></div>
+    </div>
+
+    <!-- 文件列表表格 -->
+    <table class="file-table" th:if="${fileList != null and !fileList.isEmpty()}">
+        <thead>
+        <tr>
+            <<th>文件名</th>
+            <<th>文件类型</th>
+            <<th>文件大小</th>
+            <<th>上传时间</th>
+            <<th>操作</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="file : ${fileList}">
+            <td th:text="${file.fileName}">测试文件</td>
+            <td>
+                <span th:class="|file-type ${file.fileType == '图片' ? 'img' : 'doc'}|" th:text="${file.fileType}">图片</span>
+            </td>
+            <td th:text="${file.fileSize}">1.2MB</td>
+            <td th:text="${T(java.time.format.DateTimeFormatter).ofPattern('yyyy-MM-dd HH:mm:ss').format(file.uploadTime)}">2025-12-06 10:00:00</td>
+            <td>
+                <a th:href="|/file/download/${file.fileId}|">
+                    <button class="btn btn-download">下载</button>
+                </a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+    <!-- 空数据提示 -->
+    <div class="empty-data" th:if="${fileList == null or fileList.isEmpty()}">
+        暂无上传文件，请点击"上传文件"按钮添加文件
+    </div>
+</div>
+
+<!-- 上传弹窗 -->
+<div class="modal" id="uploadModal">
+    <div class="modal-content">
+        <h3>上传文件</h3>
+        <div class="file-input" onclick="document.getElementById('fileInput').click()">
+            <p>点击选择文件（仅支持txt/pdf/docx/png/jpg）</p>
+            <p id="fileNameTip" style="margin-top: 10px; color: #999;">未选择文件</p>
+        </div>
+        <input type="file" id="fileInput" accept=".txt,.pdf,.docx,.png,.jpg" onchange="showFileName()">
+        <div class="modal-footer">
+            <button class="btn btn-close" onclick="closeUploadModal()">取消</button>
+            <button class="btn btn-primary" onclick="uploadFile()">确认上传</button>
+        </div>
+    </div>
+</div>
+
+<!-- 提示框 -->
+<div class="toast" id="toast"></div>
+
+<script>
+    // 打开上传弹窗
+    function openUploadModal() {
+        document.getElementById('uploadModal').style.display = 'flex';
+        document.getElementById('fileInput').value = '';
+        document.getElementById('fileNameTip').textContent = '未选择文件';
+    }
+
+    // 关闭上传弹窗
+    function closeUploadModal() {
+        document.getElementById('uploadModal').style.display = 'none';
+    }
+
+    // 显示选择的文件名
+    function showFileName() {
+        const fileInput = document.getElementById('fileInput');
+        if (fileInput.files.length > 0) {
+            document.getElementById('fileNameTip').textContent = fileInput.files[0].name;
+        } else {
+            document.getElementById('fileNameTip').textContent = '未选择文件';
+        }
+    }
+
+    // 搜索文件
+    function searchFile() {
+        const searchName = document.getElementById('searchInput').value.trim();
+        window.location.href = '/file/index?fileName=' + encodeURIComponent(searchName);
+    }
+
+    // 上传文件
+    function uploadFile() {
+        const fileInput = document.getElementById('fileInput');
+        if (fileInput.files.length === 0) {
+            showToast('请选择要上传的文件', 'error');
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+
+        fetch('/file/upload', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.code === 200) {
+                    showToast('文件上传成功', 'success');
+                    closeUploadModal();
+                    // 刷新页面
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    showToast(data.msg, 'error');
+                }
+            })
+            .catch(error => {
+                showToast('上传失败：' + error.message, 'error');
+            });
+    }
+
+    // 显示提示框
+    function showToast(msg, type) {
+        const toast = document.getElementById('toast');
+        toast.textContent = msg;
+        toast.className = 'toast toast-' + type;
+        toast.style.display = 'block';
+
+        // 3秒后隐藏
+        setTimeout(() => {
+            toast.style.display = 'none';
+        }, 3000);
+    }
+
+    // 按回车搜索
+    document.getElementById('searchInput').addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            searchFile();
+        }
+    });
+
+    // 点击空白处关闭弹窗
+    window.onclick = function(e) {
+        const modal = document.getElementById('uploadModal');
+        if (e.target === modal) {
+            closeUploadModal();
+        }
+    }
+</script>
+</body>
+</html>
