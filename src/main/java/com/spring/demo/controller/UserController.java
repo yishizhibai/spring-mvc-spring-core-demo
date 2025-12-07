@@ -8,6 +8,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 @RestController
 @RequestMapping("/user")
 public class UserController {
@@ -15,47 +18,40 @@ public class UserController {
 
     private final UserService userService;
 
-    // 构造器注入
     @Autowired
     public UserController(UserService userService) {
         this.userService = userService;
     }
 
-    /**
-     * 新增用户
-     */
     @PostMapping("/add")
     public ResultVO addUser(@RequestBody User user) {
         return userService.addUser(user);
     }
 
-    /**
-     * 查询所有用户
-     */
+    // 新增：支持用户名搜索
     @GetMapping("/list")
-    public ResultVO listAllUsers() {
-        return userService.listAllUsers();
+    public ResultVO listAllUsers(@RequestParam(required = false) String username) {
+        ResultVO result = userService.listAllUsers();
+        if (result.getCode() == 200 && username != null && !username.trim().isEmpty()) {
+            List<User> userList = (List<User>) result.getData();
+            List<User> filteredList = userList.stream()
+                    .filter(user -> user.getUsername().contains(username.trim()))
+                    .collect(Collectors.toList());
+            return ResultVO.success(filteredList);
+        }
+        return result;
     }
 
-    /**
-     * 根据ID查询用户
-     */
     @GetMapping("/{id}")
     public ResultVO getUserById(@PathVariable Long id) {
         return userService.getUserById(id);
     }
 
-    /**
-     * 修改用户
-     */
     @PutMapping("/update")
     public ResultVO updateUser(@RequestBody User user) {
         return userService.updateUser(user);
     }
 
-    /**
-     * 删除用户
-     */
     @DeleteMapping("/delete/{id}")
     public ResultVO deleteUser(@PathVariable Long id) {
         return userService.deleteUser(id);

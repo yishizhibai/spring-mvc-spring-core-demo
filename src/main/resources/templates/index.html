@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>文件管理系统</title>
+    <title>文件&用户管理系统</title>
     <style>
         * {
             margin: 0;
@@ -30,6 +30,34 @@
 
         .header h1 {
             font-size: 24px;
+            font-weight: 600;
+        }
+
+        /* 标签页切换 */
+        .tab-bar {
+            background-color: white;
+            padding: 0 30px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            border-bottom: 1px solid #e1e4e8;
+        }
+
+        .tab-bar ul {
+            list-style: none;
+            display: flex;
+        }
+
+        .tab-bar li {
+            padding: 15px 20px;
+            cursor: pointer;
+            font-size: 16px;
+            color: #666;
+            border-bottom: 2px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .tab-bar li.active {
+            border-bottom: 2px solid #3498db;
+            color: #3498db;
             font-weight: 600;
         }
 
@@ -92,16 +120,39 @@
             background-color: #27ae60;
         }
 
-        /* 文件列表样式 */
-        .file-container {
+        .btn-warning {
+            background-color: #f39c12;
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background-color: #d35400;
+        }
+
+        .btn-danger {
+            background-color: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+
+        /* 列表容器样式 */
+        .list-container {
             margin: 0 20px;
             background-color: white;
             border-radius: 8px;
             box-shadow: 0 2px 8px rgba(0,0,0,0.05);
             overflow: hidden;
+            display: none;
         }
 
-        .file-stats {
+        .list-container.active {
+            display: block;
+        }
+
+        .list-stats {
             padding: 15px 30px;
             border-bottom: 1px solid #f0f2f5;
             display: flex;
@@ -109,12 +160,12 @@
             color: #666;
         }
 
-        .file-table {
+        .list-table {
             width: 100%;
             border-collapse: collapse;
         }
 
-        .file-table th {
+        .list-table th {
             background-color: #f8f9fa;
             padding: 15px;
             text-align: left;
@@ -123,13 +174,13 @@
             border-bottom: 1px solid #e1e4e8;
         }
 
-        .file-table td {
+        .list-table td {
             padding: 15px;
             border-bottom: 1px solid #f0f2f5;
             color: #555;
         }
 
-        .file-table tr:hover {
+        .list-table tr:hover {
             background-color: #f9f9f9;
         }
 
@@ -150,17 +201,6 @@
             color: #2980b9;
         }
 
-        .btn-download {
-            background-color: #1abc9c;
-            color: white;
-            padding: 6px 12px;
-            font-size: 12px;
-        }
-
-        .btn-download:hover {
-            background-color: #16a085;
-        }
-
         /* 空数据样式 */
         .empty-data {
             padding: 80px 0;
@@ -169,7 +209,7 @@
             font-size: 16px;
         }
 
-        /* 上传弹窗样式 */
+        /* 弹窗样式 */
         .modal {
             display: none;
             position: fixed;
@@ -195,6 +235,26 @@
             margin-bottom: 20px;
             font-size: 18px;
             color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid #e1e4e8;
+            border-radius: 4px;
+            font-size: 14px;
+            outline: none;
         }
 
         .file-input {
@@ -256,26 +316,42 @@
 <body>
 <!-- 头部 -->
 <div class="header">
-    <h1>文件管理系统</h1>
+    <h1>文件&用户管理系统</h1>
 </div>
 
-<!-- 操作栏 -->
-<div class="operation-bar">
+<!-- 标签页切换栏 -->
+<div class="tab-bar">
+    <ul>
+        <li class="active" onclick="switchTab('file-tab')">文件管理</li>
+        <li onclick="switchTab('user-tab')">用户管理</li>
+    </ul>
+</div>
+
+<!-- 文件管理操作栏 -->
+<div class="operation-bar" id="file-operation">
     <div class="search-box">
-        <input type="text" id="searchInput" placeholder="请输入文件名搜索（不含后缀）" th:value="${searchName}">
+        <input type="text" id="fileSearchInput" placeholder="请输入文件名搜索（不含后缀）">
         <button class="btn btn-primary" onclick="searchFile()">搜索</button>
     </div>
     <button class="btn btn-success" onclick="openUploadModal()">上传文件</button>
 </div>
 
+<!-- 用户管理操作栏 -->
+<div class="operation-bar" id="user-operation" style="display: none;">
+    <div class="search-box">
+        <input type="text" id="userSearchInput" placeholder="请输入用户名搜索">
+        <button class="btn btn-primary" onclick="searchUser()">搜索</button>
+    </div>
+    <button class="btn btn-success" onclick="openUserModal()">新增用户</button>
+</div>
+
 <!-- 文件列表容器 -->
-<div class="file-container">
-    <div class="file-stats">
-        <div>总文件数：<span th:text="${totalCount}">0</span></div>
+<div class="list-container active" id="file-container">
+    <div class="list-stats">
+        <div>总文件数：<span id="fileTotalCount">0</span></div>
     </div>
 
-    <!-- 文件列表表格 -->
-    <table class="file-table" th:if="${fileList != null and !fileList.isEmpty()}">
+    <table class="list-table" id="fileTable">
         <thead>
         <tr>
             <<th>文件名</th>
@@ -285,30 +361,39 @@
             <<th>操作</th>
         </tr>
         </thead>
-        <tbody>
-        <tr th:each="file : ${fileList}">
-            <td th:text="${file.fileName}">测试文件</td>
-            <td>
-                <span th:class="|file-type ${file.fileType == '图片' ? 'img' : 'doc'}|" th:text="${file.fileType}">图片</span>
-            </td>
-            <td th:text="${file.fileSize}">1.2MB</td>
-            <td th:text="${T(java.time.format.DateTimeFormatter).ofPattern('yyyy-MM-dd HH:mm:ss').format(file.uploadTime)}">2025-12-06 10:00:00</td>
-            <td>
-                <a th:href="|/file/download/${file.fileId}|">
-                    <button class="btn btn-download">下载</button>
-                </a>
-            </td>
+        <tbody id="fileTableBody">
+        <tr>
+            <td colspan="5" class="empty-data">暂无上传文件，请点击"上传文件"按钮添加文件</td>
         </tr>
         </tbody>
     </table>
-
-    <!-- 空数据提示 -->
-    <div class="empty-data" th:if="${fileList == null or fileList.isEmpty()}">
-        暂无上传文件，请点击"上传文件"按钮添加文件
-    </div>
 </div>
 
-<!-- 上传弹窗 -->
+<!-- 用户列表容器 -->
+<div class="list-container" id="user-container">
+    <div class="list-stats">
+        <div>总用户数：<span id="userTotalCount">0</span></div>
+    </div>
+
+    <table class="list-table" id="userTable">
+        <thead>
+        <tr>
+            <<th>用户ID</th>
+            <<th>用户名</th>
+            <<th>年龄</th>
+            <<th>手机号</th>
+            <<th>操作</th>
+        </tr>
+        </thead>
+        <tbody id="userTableBody">
+        <tr>
+            <td colspan="5" class="empty-data">暂无用户信息，请点击"新增用户"按钮添加用户</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+<!-- 文件上传弹窗 -->
 <div class="modal" id="uploadModal">
     <div class="modal-content">
         <h3>上传文件</h3>
@@ -318,8 +403,32 @@
         </div>
         <input type="file" id="fileInput" accept=".txt,.pdf,.docx,.png,.jpg" onchange="showFileName()">
         <div class="modal-footer">
-            <button class="btn btn-close" onclick="closeUploadModal()">取消</button>
+            <button class="btn btn-close" onclick="closeModal('uploadModal')">取消</button>
             <button class="btn btn-primary" onclick="uploadFile()">确认上传</button>
+        </div>
+    </div>
+</div>
+
+<!-- 用户新增/编辑弹窗 -->
+<div class="modal" id="userModal">
+    <div class="modal-content">
+        <h3 id="userModalTitle">新增用户</h3>
+        <input type="hidden" id="userId">
+        <div class="form-group">
+            <label for="username">用户名</label>
+            <input type="text" id="username" placeholder="请输入用户名">
+        </div>
+        <div class="form-group">
+            <label for="age">年龄</label>
+            <input type="number" id="age" placeholder="请输入年龄">
+        </div>
+        <div class="form-group">
+            <label for="phone">手机号</label>
+            <input type="text" id="phone" placeholder="请输入手机号">
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-close" onclick="closeModal('userModal')">取消</button>
+            <button class="btn btn-primary" onclick="submitUser()">确认提交</button>
         </div>
     </div>
 </div>
@@ -328,16 +437,84 @@
 <div class="toast" id="toast"></div>
 
 <script>
+    // 标签页切换
+    function switchTab(tabName) {
+        // 切换标签样式
+        document.querySelectorAll('.tab-bar li').forEach(li => li.classList.remove('active'));
+        document.querySelector(`.tab-bar li[onclick="switchTab('${tabName}')"]`).classList.add('active');
+
+        // 切换操作栏
+        if (tabName === 'file-tab') {
+            document.getElementById('file-operation').style.display = 'flex';
+            document.getElementById('user-operation').style.display = 'none';
+        } else {
+            document.getElementById('file-operation').style.display = 'none';
+            document.getElementById('user-operation').style.display = 'flex';
+            // 切换到用户标签时加载用户列表
+            loadUserList();
+        }
+
+        // 切换列表容器
+        document.querySelectorAll('.list-container').forEach(container => container.classList.remove('active'));
+        document.getElementById(`${tabName.split('-')[0]}-container`).classList.add('active');
+    }
+
+    // 文件管理相关
+    // 加载文件列表
+    function loadFileList(fileName = '') {
+        fetch(`/file/index?fileName=${encodeURIComponent(fileName)}`)
+            .then(response => response.text())
+            .then(html => {
+                // 解析Thymeleaf渲染后的文件列表数据（实际项目中建议后端返回JSON）
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = html;
+                const fileList = Array.from(tempDiv.querySelectorAll('#fileTableBody tr')).map(tr => {
+                    const tds = tr.querySelectorAll('td');
+                    return tds.length > 1 ? {
+                        fileName: tds[0].textContent,
+                        fileType: tds[1].textContent,
+                        formattedFileSize: tds[2].textContent,
+                        uploadTime: tds[3].textContent,
+                        fileId: tds[4].querySelector('a').getAttribute('href').split('/').pop()
+                    } : null;
+                }).filter(item => item);
+
+                // 更新文件列表
+                const fileTableBody = document.getElementById('fileTableBody');
+                if (fileList.length > 0) {
+                    fileTableBody.innerHTML = fileList.map(file => `
+                        <tr>
+                            <td>${file.fileName}</td>
+                            <td>
+                                <span class="file-type ${file.fileType === '图片' ? 'file-type-img' : 'file-type-doc'}">${file.fileType}</span>
+                            </td>
+                            <td>${file.formattedFileSize}</td>
+                            <td>${file.uploadTime}</td>
+                            <td>
+                                <a href="/file/download/${file.fileId}">
+                                    <button class="btn btn-primary">下载</button>
+                                </a>
+                            </td>
+                        </tr>
+                    `).join('');
+                } else {
+                    fileTableBody.innerHTML = '<tr><td colspan="5" class="empty-data">暂无上传文件，请点击"上传文件"按钮添加文件</td></tr>';
+                }
+                document.getElementById('fileTotalCount').textContent = fileList.length;
+            });
+    }
+
+    // 搜索文件
+    function searchFile() {
+        const fileName = document.getElementById('fileSearchInput').value.trim();
+        loadFileList(fileName);
+    }
+
     // 打开上传弹窗
     function openUploadModal() {
         document.getElementById('uploadModal').style.display = 'flex';
         document.getElementById('fileInput').value = '';
         document.getElementById('fileNameTip').textContent = '未选择文件';
-    }
-
-    // 关闭上传弹窗
-    function closeUploadModal() {
-        document.getElementById('uploadModal').style.display = 'none';
     }
 
     // 显示选择的文件名
@@ -348,12 +525,6 @@
         } else {
             document.getElementById('fileNameTip').textContent = '未选择文件';
         }
-    }
-
-    // 搜索文件
-    function searchFile() {
-        const searchName = document.getElementById('searchInput').value.trim();
-        window.location.href = '/file/index?fileName=' + encodeURIComponent(searchName);
     }
 
     // 上传文件
@@ -375,11 +546,8 @@
             .then(data => {
                 if (data.code === 200) {
                     showToast('文件上传成功', 'success');
-                    closeUploadModal();
-                    // 刷新页面
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1000);
+                    closeModal('uploadModal');
+                    loadFileList();
                 } else {
                     showToast(data.msg, 'error');
                 }
@@ -389,32 +557,147 @@
             });
     }
 
+    // 用户管理相关
+    // 加载用户列表
+    function loadUserList(username = '') {
+        fetch(`/user/list?username=${encodeURIComponent(username)}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.code === 200) {
+                    const userList = data.data;
+                    const userTableBody = document.getElementById('userTableBody');
+                    if (userList.length > 0) {
+                        userTableBody.innerHTML = userList.map(user => `
+                            <tr>
+                                <td>${user.id}</td>
+                                <td>${user.username}</td>
+                                <td>${user.age}</td>
+                                <td>${user.phone}</td>
+                                <td>
+                                    <button class="btn btn-warning" onclick="openUserModal('edit', ${JSON.stringify(user)})">编辑</button>
+                                    <button class="btn btn-danger" onclick="deleteUser(${user.id})">删除</button>
+                                </td>
+                            </tr>
+                        `).join('');
+                    } else {
+                        userTableBody.innerHTML = '<tr><td colspan="5" class="empty-data">暂无用户信息，请点击"新增用户"按钮添加用户</td></tr>';
+                    }
+                    document.getElementById('userTotalCount').textContent = userList.length;
+                } else {
+                    showToast(data.msg, 'error');
+                }
+            })
+            .catch(error => {
+                showToast('加载用户列表失败：' + error.message, 'error');
+            });
+    }
+
+    // 搜索用户
+    function searchUser() {
+        const username = document.getElementById('userSearchInput').value.trim();
+        loadUserList(username);
+    }
+
+    // 打开用户弹窗（新增/编辑）
+    function openUserModal(type = 'add', user = null) {
+        document.getElementById('userModal').style.display = 'flex';
+        if (type === 'add') {
+            document.getElementById('userModalTitle').textContent = '新增用户';
+            document.getElementById('userId').value = '';
+            document.getElementById('username').value = '';
+            document.getElementById('age').value = '';
+            document.getElementById('phone').value = '';
+        } else {
+            document.getElementById('userModalTitle').textContent = '编辑用户';
+            document.getElementById('userId').value = user.id;
+            document.getElementById('username').value = user.username;
+            document.getElementById('age').value = user.age;
+            document.getElementById('phone').value = user.phone;
+        }
+    }
+
+    // 提交用户（新增/编辑）
+    function submitUser() {
+        const id = document.getElementById('userId').value;
+        const username = document.getElementById('username').value.trim();
+        const age = document.getElementById('age').value;
+        const phone = document.getElementById('phone').value.trim();
+
+        // 校验
+        if (!username) {
+            showToast('用户名不能为空', 'error');
+            return;
+        }
+        if (age && (age < 0 || age > 150)) {
+            showToast('年龄必须在0-150之间', 'error');
+            return;
+        }
+        if (!phone) {
+            showToast('手机号不能为空', 'error');
+            return;
+        }
+
+        const userData = { username, age: age ? parseInt(age) : null, phone };
+        const url = id ? '/user/update' : '/user/add';
+        const method = id ? 'PUT' : 'POST';
+
+        fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(userData)
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.code === 200) {
+                    showToast(id ? '用户编辑成功' : '用户新增成功', 'success');
+                    closeModal('userModal');
+                    loadUserList();
+                } else {
+                    showToast(data.msg, 'error');
+                }
+            })
+            .catch(error => {
+                showToast((id ? '编辑' : '新增') + '用户失败：' + error.message, 'error');
+            });
+    }
+
+    // 删除用户
+    function deleteUser(id) {
+        if (confirm('确定要删除该用户吗？')) {
+            fetch(`/user/delete/${id}`, { method: 'DELETE' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.code === 200) {
+                        showToast('用户删除成功', 'success');
+                        loadUserList();
+                    } else {
+                        showToast(data.msg, 'error');
+                    }
+                })
+                .catch(error => {
+                    showToast('删除用户失败：' + error.message, 'error');
+                });
+        }
+    }
+
+    // 通用方法
+    // 关闭弹窗
+    function closeModal(modalId) {
+        document.getElementById(modalId).style.display = 'none';
+    }
+
     // 显示提示框
     function showToast(msg, type) {
         const toast = document.getElementById('toast');
         toast.textContent = msg;
         toast.className = 'toast toast-' + type;
         toast.style.display = 'block';
-
-        // 3秒后隐藏
-        setTimeout(() => {
-            toast.style.display = 'none';
-        }, 3000);
+        setTimeout(() => { toast.style.display = 'none'; }, 3000);
     }
 
-    // 按回车搜索
-    document.getElementById('searchInput').addEventListener('keydown', function(e) {
-        if (e.key === 'Enter') {
-            searchFile();
-        }
-    });
-
-    // 点击空白处关闭弹窗
-    window.onclick = function(e) {
-        const modal = document.getElementById('uploadModal');
-        if (e.target === modal) {
-            closeUploadModal();
-        }
+    // 初始化加载文件列表
+    window.onload = function() {
+        loadFileList();
     }
 </script>
 </body>
