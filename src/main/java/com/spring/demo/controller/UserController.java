@@ -37,7 +37,7 @@ public class UserController {
             List<User> filteredList = userList.stream()
                     .filter(user -> user.getUsername().contains(username.trim()))
                     .collect(Collectors.toList());
-            return ResultVO.success(filteredList);
+            return ResultVO.success("查询用户列表成功", filteredList);
         }
         return result;
     }

@@ -15,9 +15,7 @@ import java.util.Optional;
 @Service
 public class UserServiceImpl implements UserService {
     private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
-
     private final UserRepository userRepository;
-
     // 构造器注入
     @Autowired
     public UserServiceImpl(UserRepository userRepository) {
@@ -38,14 +36,14 @@ public class UserServiceImpl implements UserService {
 
         User savedUser = userRepository.save(user);
         log.info("新增用户成功：{}", savedUser.getUsername());
-        return ResultVO.success(savedUser);
+        return ResultVO.success("新增用户成功", savedUser);
     }
 
     @Override
     public ResultVO listAllUsers() {
         List<User> userList = userRepository.findAll();
         log.info("查询所有用户，数量：{}", userList.size());
-        return ResultVO.success(userList);
+        return ResultVO.success("查询成功",userList);
     }
 
     @Override
@@ -55,7 +53,7 @@ public class UserServiceImpl implements UserService {
         }
         Optional<User> optionalUser = userRepository.findById(id);
         if (optionalUser.isPresent()) {
-            return ResultVO.success(optionalUser.get());
+            return ResultVO.success("用户已存在",optionalUser.get());
         } else {
             log.error("查询用户失败：ID{}不存在", id);
             return ResultVO.error("用户不存在");
@@ -74,7 +72,7 @@ public class UserServiceImpl implements UserService {
         boolean updateResult = userRepository.update(user);
         if (updateResult) {
             log.info("修改用户成功：ID{}", user.getId());
-            return ResultVO.success();
+            return ResultVO.success("修改用户成功");
         } else {
             log.error("修改用户失败：ID{}不存在", user.getId());
             return ResultVO.error("用户不存在");
@@ -90,7 +88,7 @@ public class UserServiceImpl implements UserService {
         boolean deleteResult = userRepository.delete(id);
         if (deleteResult) {
             log.info("删除用户成功：ID{}", id);
-            return ResultVO.success();
+            return ResultVO.success("删除用户成功");
         } else {
             log.error("删除用户失败：ID{}不存在", id);
             return ResultVO.error("用户不存在");

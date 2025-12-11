@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>文件&用户管理系统</title>
+    <!-- 引入MD5依赖 -->
+    <script src="https://cdn.bootcdn.net/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -11,205 +13,51 @@
             box-sizing: border-box;
             font-family: "Microsoft YaHei", sans-serif;
         }
-
-        body {
-            background-color: #f5f7fa;
-            color: #333;
-        }
-
-        /* 头部样式 */
         .header {
             background-color: #2c3e50;
             color: white;
             padding: 20px 30px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
         }
-
-        .header h1 {
-            font-size: 24px;
-            font-weight: 600;
-        }
-
-        /* 标签页切换 */
         .tab-bar {
             background-color: white;
             padding: 0 30px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
             border-bottom: 1px solid #e1e4e8;
         }
-
-        .tab-bar ul {
-            list-style: none;
-            display: flex;
-        }
-
         .tab-bar li {
+            display: inline-block;
             padding: 15px 20px;
             cursor: pointer;
-            font-size: 16px;
-            color: #666;
-            border-bottom: 2px solid transparent;
-            transition: all 0.3s;
         }
-
         .tab-bar li.active {
             border-bottom: 2px solid #3498db;
             color: #3498db;
-            font-weight: 600;
         }
-
-        /* 操作栏样式 */
         .operation-bar {
             background-color: white;
             padding: 20px 30px;
             margin: 20px;
             border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
             display: flex;
             justify-content: space-between;
-            align-items: center;
         }
-
-        .search-box {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .search-box input {
-            width: 300px;
-            padding: 10px 15px;
-            border: 1px solid #e1e4e8;
-            border-radius: 4px;
-            font-size: 14px;
-            outline: none;
-            transition: border-color 0.3s;
-        }
-
-        .search-box input:focus {
-            border-color: #3498db;
-        }
-
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.3s;
-        }
-
-        .btn-primary {
-            background-color: #3498db;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background-color: #2980b9;
-        }
-
-        .btn-success {
-            background-color: #2ecc71;
-            color: white;
-        }
-
-        .btn-success:hover {
-            background-color: #27ae60;
-        }
-
-        .btn-warning {
-            background-color: #f39c12;
-            color: white;
-        }
-
-        .btn-warning:hover {
-            background-color: #d35400;
-        }
-
-        .btn-danger {
-            background-color: #e74c3c;
-            color: white;
-        }
-
-        .btn-danger:hover {
-            background-color: #c0392b;
-        }
-
-        /* 列表容器样式 */
         .list-container {
             margin: 0 20px;
             background-color: white;
             border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-            overflow: hidden;
             display: none;
         }
-
         .list-container.active {
             display: block;
         }
-
-        .list-stats {
-            padding: 15px 30px;
-            border-bottom: 1px solid #f0f2f5;
-            display: flex;
-            gap: 30px;
-            color: #666;
-        }
-
         .list-table {
             width: 100%;
             border-collapse: collapse;
         }
-
-        .list-table th {
-            background-color: #f8f9fa;
+        .list-table th, .list-table td {
             padding: 15px;
             text-align: left;
-            font-weight: 600;
-            color: #444;
-            border-bottom: 1px solid #e1e4e8;
-        }
-
-        .list-table td {
-            padding: 15px;
             border-bottom: 1px solid #f0f2f5;
-            color: #555;
         }
-
-        .list-table tr:hover {
-            background-color: #f9f9f9;
-        }
-
-        .file-type {
-            display: inline-block;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 12px;
-        }
-
-        .file-type-img {
-            background-color: #e8f4fd;
-            color: #3498db;
-        }
-
-        .file-type-doc {
-            background-color: #f0f8fb;
-            color: #2980b9;
-        }
-
-        /* 空数据样式 */
-        .empty-data {
-            padding: 80px 0;
-            text-align: center;
-            color: #999;
-            font-size: 16px;
-        }
-
-        /* 弹窗样式 */
         .modal {
             display: none;
             position: fixed;
@@ -218,80 +66,42 @@
             width: 100%;
             height: 100%;
             background-color: rgba(0,0,0,0.5);
-            z-index: 1000;
             justify-content: center;
             align-items: center;
         }
-
         .modal-content {
             background-color: white;
             padding: 30px;
             border-radius: 8px;
             width: 500px;
-            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
         }
-
-        .modal-content h3 {
-            margin-bottom: 20px;
-            font-size: 18px;
-            color: #333;
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-size: 14px;
-            color: #666;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 10px 15px;
-            border: 1px solid #e1e4e8;
-            border-radius: 4px;
-            font-size: 14px;
-            outline: none;
-        }
-
         .file-input {
-            margin: 15px 0;
             padding: 20px;
             border: 2px dashed #e1e4e8;
             border-radius: 4px;
             text-align: center;
+            margin: 15px 0;
             cursor: pointer;
-            transition: border-color 0.3s;
         }
-
-        .file-input:hover {
-            border-color: #3498db;
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 8px;
         }
-
-        .file-input input {
-            display: none;
+        .btn-primary {
+            background-color: #3498db;
+            color: white;
         }
-
-        .modal-footer {
-            margin-top: 20px;
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
+        .btn-success {
+            background-color: #2ecc71;
+            color: white;
         }
-
         .btn-close {
             background-color: #95a5a6;
             color: white;
         }
-
-        .btn-close:hover {
-            background-color: #7f8c8d;
-        }
-
-        /* 提示信息样式 */
         .toast {
             position: fixed;
             top: 20px;
@@ -299,17 +109,37 @@
             padding: 15px 20px;
             border-radius: 4px;
             color: white;
-            z-index: 1001;
             display: none;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
-
         .toast-success {
             background-color: #2ecc71;
         }
-
         .toast-error {
             background-color: #e74c3c;
+        }
+        .empty-data {
+            text-align: center;
+            color: #999;
+            padding: 40px 0;
+        }
+
+         .toast {
+             position: fixed;
+             top: 20px;
+             right: 20px;
+             padding: 12px 20px;
+             border-radius: 4px;
+             color: white;
+             display: none;
+             box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+             z-index: 9999;
+         }
+        .toast-success {
+            background-color: #2ecc71; /* 成功：绿色 */
+        }
+        .toast-error {
+            background-color: #e74c3c; /* 错误：红色 */
         }
     </style>
 </head>
@@ -319,7 +149,7 @@
     <h1>文件&用户管理系统</h1>
 </div>
 
-<!-- 标签页切换栏 -->
+<!-- 标签页 -->
 <div class="tab-bar">
     <ul>
         <li class="active" onclick="switchTab('file-tab')">文件管理</li>
@@ -327,16 +157,16 @@
     </ul>
 </div>
 
-<!-- 文件管理操作栏 -->
+<!-- 文件操作栏 -->
 <div class="operation-bar" id="file-operation">
     <div class="search-box">
-        <input type="text" id="fileSearchInput" placeholder="请输入文件名搜索（不含后缀）">
+        <input type="text" id="fileSearchInput" placeholder="请输入文件名搜索">
         <button class="btn btn-primary" onclick="searchFile()">搜索</button>
     </div>
     <button class="btn btn-success" onclick="openUploadModal()">上传文件</button>
 </div>
 
-<!-- 用户管理操作栏 -->
+<!-- 用户操作栏 -->
 <div class="operation-bar" id="user-operation" style="display: none;">
     <div class="search-box">
         <input type="text" id="userSearchInput" placeholder="请输入用户名搜索">
@@ -345,40 +175,32 @@
     <button class="btn btn-success" onclick="openUserModal()">新增用户</button>
 </div>
 
-<!-- 文件列表容器 -->
+<!-- 文件列表 -->
 <div class="list-container active" id="file-container">
-    <div class="list-stats">
-        <div>总文件数：<span id="fileTotalCount">0</span></div>
-    </div>
-
     <table class="list-table" id="fileTable">
         <thead>
         <tr>
             <<th>文件名</th>
-            <<th>文件类型</th>
-            <<th>文件大小</th>
+            <<th>类型</th>
+            <<th>大小</th>
             <<th>上传时间</th>
             <<th>操作</th>
         </tr>
         </thead>
         <tbody id="fileTableBody">
         <tr>
-            <td colspan="5" class="empty-data">暂无上传文件，请点击"上传文件"按钮添加文件</td>
+            <td colspan="5" class="empty-data">暂无文件</td>
         </tr>
         </tbody>
     </table>
 </div>
 
-<!-- 用户列表容器 -->
+<!-- 用户列表 -->
 <div class="list-container" id="user-container">
-    <div class="list-stats">
-        <div>总用户数：<span id="userTotalCount">0</span></div>
-    </div>
-
     <table class="list-table" id="userTable">
         <thead>
         <tr>
-            <<th>用户ID</th>
+            <<th>ID</th>
             <<th>用户名</th>
             <<th>年龄</th>
             <<th>手机号</th>
@@ -387,19 +209,19 @@
         </thead>
         <tbody id="userTableBody">
         <tr>
-            <td colspan="5" class="empty-data">暂无用户信息，请点击"新增用户"按钮添加用户</td>
+            <td colspan="5" class="empty-data">暂无用户</td>
         </tr>
         </tbody>
     </table>
 </div>
 
-<!-- 文件上传弹窗 -->
+<!-- 上传弹窗 -->
 <div class="modal" id="uploadModal">
     <div class="modal-content">
         <h3>上传文件</h3>
         <div class="file-input" onclick="document.getElementById('fileInput').click()">
-            <p>点击选择文件（仅支持txt/pdf/docx/png/jpg）</p>
-            <p id="fileNameTip" style="margin-top: 10px; color: #999;">未选择文件</p>
+            <p>点击选择文件（支持txt/pdf/docx/png/jpg）</p>
+            <p id="fileNameTip">未选择文件</p>
         </div>
         <input type="file" id="fileInput" accept=".txt,.pdf,.docx,.png,.jpg" onchange="showFileName()">
         <div class="modal-footer">
@@ -408,113 +230,70 @@
         </div>
     </div>
 </div>
-
-<!-- 用户新增/编辑弹窗 -->
+<!-- 新增：用户弹窗（放在上传弹窗的</div>之后） -->
 <div class="modal" id="userModal">
     <div class="modal-content">
         <h3 id="userModalTitle">新增用户</h3>
-        <input type="hidden" id="userId">
-        <div class="form-group">
-            <label for="username">用户名</label>
-            <input type="text" id="username" placeholder="请输入用户名">
+        <input type="hidden" id="userId"> <!-- 编辑时存储用户ID -->
+        <div style="margin: 15px 0;">
+            <label>用户名：</label>
+            <input type="text" id="userName" placeholder="请输入用户名" style="width: 100%; padding: 8px; margin-top: 5px;">
         </div>
-        <div class="form-group">
-            <label for="age">年龄</label>
-            <input type="number" id="age" placeholder="请输入年龄">
+        <div style="margin: 15px 0;">
+            <label>年龄：</label>
+            <input type="number" id="userAge" placeholder="请输入年龄" style="width: 100%; padding: 8px; margin-top: 5px;">
         </div>
-        <div class="form-group">
-            <label for="phone">手机号</label>
-            <input type="text" id="phone" placeholder="请输入手机号">
+        <div style="margin: 15px 0;">
+            <label>手机号：</label>
+            <input type="text" id="userPhone" placeholder="请输入手机号" style="width: 100%; padding: 8px; margin-top: 5px;">
         </div>
         <div class="modal-footer">
             <button class="btn btn-close" onclick="closeModal('userModal')">取消</button>
-            <button class="btn btn-primary" onclick="submitUser()">确认提交</button>
+            <button class="btn btn-primary" onclick="submitUser()">确认</button>
         </div>
     </div>
 </div>
-
 <!-- 提示框 -->
 <div class="toast" id="toast"></div>
 
 <script>
+    let chunkSize = 0; // 分片大小（从后端获取）
+
+    // 初始化：加载文件列表+获取分片大小
+    window.onload = function() {
+        loadFileList();
+        fetch('/file/chunk/size')
+            .then(res => res.json())
+            .then(data => chunkSize = data.data);
+    };
+
+    // 显示提示（修复样式和文字）
+    function showToast(msg, type) {
+        const toast = document.getElementById('toast');
+        // 清空原有内容，设置新消息
+        toast.textContent = msg;
+        // 设置样式（区分成功/错误）
+        toast.className = `toast ${type === 'success' ? 'toast-success' : 'toast-error'}`;
+        toast.style.display = 'block';
+        // 3秒后隐藏
+        setTimeout(() => {
+            toast.style.display = 'none';
+        }, 3000);
+    }
+
     // 标签页切换
     function switchTab(tabName) {
         // 切换标签样式
         document.querySelectorAll('.tab-bar li').forEach(li => li.classList.remove('active'));
         document.querySelector(`.tab-bar li[onclick="switchTab('${tabName}')"]`).classList.add('active');
-
-        // 切换操作栏
-        if (tabName === 'file-tab') {
-            document.getElementById('file-operation').style.display = 'flex';
-            document.getElementById('user-operation').style.display = 'none';
-        } else {
-            document.getElementById('file-operation').style.display = 'none';
-            document.getElementById('user-operation').style.display = 'flex';
-            // 切换到用户标签时加载用户列表
-            loadUserList();
-        }
-
         // 切换列表容器
-        document.querySelectorAll('.list-container').forEach(container => container.classList.remove('active'));
+        document.querySelectorAll('.list-container').forEach(c => c.classList.remove('active'));
         document.getElementById(`${tabName.split('-')[0]}-container`).classList.add('active');
-    }
-
-    // 文件管理相关
-    // 加载文件列表
-    function loadFileList(fileName = '') {
-        fetch(`/file/index?fileName=${encodeURIComponent(fileName)}`)
-            .then(response => response.text())
-            .then(html => {
-                // 解析Thymeleaf渲染后的文件列表数据（实际项目中建议后端返回JSON）
-                const tempDiv = document.createElement('div');
-                tempDiv.innerHTML = html;
-                const fileList = Array.from(tempDiv.querySelectorAll('#fileTableBody tr')).map(tr => {
-                    const tds = tr.querySelectorAll('td');
-                    return tds.length > 1 ? {
-                        fileName: tds[0].textContent,
-                        fileType: tds[1].textContent,
-                        formattedFileSize: tds[2].textContent,
-                        uploadTime: tds[3].textContent,
-                        fileId: tds[4].querySelector('a').getAttribute('href').split('/').pop()
-                    } : null;
-                }).filter(item => item);
-
-                // 更新文件列表
-                const fileTableBody = document.getElementById('fileTableBody');
-                if (fileList.length > 0) {
-                    fileTableBody.innerHTML = fileList.map(file => `
-                        <tr>
-                            <td>${file.fileName}</td>
-                            <td>
-                                <span class="file-type ${file.fileType === '图片' ? 'file-type-img' : 'file-type-doc'}">${file.fileType}</span>
-                            </td>
-                            <td>${file.formattedFileSize}</td>
-                            <td>${file.uploadTime}</td>
-                            <td>
-                                <a href="/file/download/${file.fileId}">
-                                    <button class="btn btn-primary">下载</button>
-                                </a>
-                            </td>
-                        </tr>
-                    `).join('');
-                } else {
-                    fileTableBody.innerHTML = '<tr><td colspan="5" class="empty-data">暂无上传文件，请点击"上传文件"按钮添加文件</td></tr>';
-                }
-                document.getElementById('fileTotalCount').textContent = fileList.length;
-            });
-    }
-
-    // 搜索文件
-    function searchFile() {
-        const fileName = document.getElementById('fileSearchInput').value.trim();
-        loadFileList(fileName);
-    }
-
-    // 打开上传弹窗
-    function openUploadModal() {
-        document.getElementById('uploadModal').style.display = 'flex';
-        document.getElementById('fileInput').value = '';
-        document.getElementById('fileNameTip').textContent = '未选择文件';
+        // 切换操作栏
+        document.getElementById('file-operation').style.display = tabName === 'file-tab' ? 'flex' : 'none';
+        document.getElementById('user-operation').style.display = tabName === 'user-tab' ? 'flex' : 'none';
+        // 加载用户列表
+        if (tabName === 'user-tab') loadUserList();
     }
 
     // 显示选择的文件名
@@ -527,41 +306,189 @@
         }
     }
 
-    // 上传文件
+    // 核心：上传文件入口（区分大/小文件）
     function uploadFile() {
         const fileInput = document.getElementById('fileInput');
         if (fileInput.files.length === 0) {
-            showToast('请选择要上传的文件', 'error');
+            showToast('请选择文件', 'error');
             return;
         }
+        const file = fileInput.files[0];
+        // 根据文件大小选择上传方式
+        if (chunkSize > 0 && file.size > chunkSize) {
+            uploadBigFile(file); // 大文件→分片上传
+        } else {
+            uploadFileNormal(file); // 小文件→普通上传
+        }
+    }
 
+    // ========== 大文件分片上传逻辑 ==========
+    function uploadBigFile(file) {
+        const fileReader = new FileReader();
+        fileReader.readAsArrayBuffer(file);
+        fileReader.onload = function(e) {
+            // 计算文件MD5（用于分片合并标识）
+            const wordArray = CryptoJS.lib.WordArray.create(e.target.result);
+            const fileMd5 = CryptoJS.MD5(wordArray).toString(CryptoJS.enc.Hex);
+
+            const totalChunks = Math.ceil(file.size / chunkSize);
+            const fileName = file.name.substring(0, file.name.lastIndexOf('.'));
+            const fileSuffix = file.name.substring(file.name.lastIndexOf('.') + 1);
+            let uploadedChunks = 0;
+
+            // 逐个上传分片（闭包解决循环变量问题）
+            for (let i = 0; i < totalChunks; i++) {
+                (function(index) {
+                    const start = index * chunkSize;
+                    const end = Math.min((index + 1) * chunkSize, file.size);
+                    const chunk = file.slice(start, end);
+
+                    const formData = new FormData();
+                    formData.append('file', chunk);
+                    formData.append('fileMd5', fileMd5);
+                    formData.append('chunkIndex', index);
+                    formData.append('totalChunks', totalChunks);
+
+                    fetch('/file/upload/chunk', {
+                        method: 'POST',
+                        body: formData
+                    })
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.code === 200) {
+                                uploadedChunks++;
+                                showToast(`上传中：${Math.floor((uploadedChunks / totalChunks) * 100)}%`, 'success');
+                                // 所有分片上传完成→合并
+                                if (uploadedChunks === totalChunks) {
+                                    mergeChunks(fileMd5, fileName, fileSuffix);
+                                }
+                            } else {
+                                showToast(`分片${index}上传失败：${data.msg}`, 'error');
+                            }
+                        })
+                        .catch(err => {
+                            showToast(`分片${index}上传失败：${err.message}`, 'error');
+                        });
+                })(i);
+            }
+        };
+    }
+
+    // 合并分片
+    function mergeChunks(fileMd5, fileName, fileSuffix) {
         const formData = new FormData();
-        formData.append('file', fileInput.files[0]);
+        formData.append('fileMd5', fileMd5);
+        formData.append('fileName', fileName);
+        formData.append('fileSuffix', fileSuffix);
+
+        fetch('/file/upload/merge', {
+            method: 'POST',
+            body: formData
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.code === 200) {
+                    showToast('大文件上传成功', 'success');
+                    closeModal('uploadModal');
+                    loadFileList(); // 刷新文件列表
+                } else {
+                    showToast('文件合并失败：' + data.msg, 'error');
+                }
+            })
+            .catch(err => {
+                showToast('合并失败：' + err.message, 'error');
+            });
+    }
+
+    // ========== 小文件普通上传逻辑 ==========
+    function uploadFileNormal(file) {
+        const formData = new FormData();
+        formData.append('file', file);
 
         fetch('/file/upload', {
             method: 'POST',
             body: formData
         })
-            .then(response => response.json())
+            .then(res => res.json())
             .then(data => {
                 if (data.code === 200) {
                     showToast('文件上传成功', 'success');
                     closeModal('uploadModal');
-                    loadFileList();
+                    loadFileList(); // 刷新文件列表
                 } else {
                     showToast(data.msg, 'error');
                 }
             })
-            .catch(error => {
-                showToast('上传失败：' + error.message, 'error');
+            .catch(err => {
+                showToast('上传失败：' + err.message, 'error');
             });
     }
 
-    // 用户管理相关
-    // 加载用户列表
+    // 加载文件列表（直接请求后端JSON接口）
+    function loadFileList(fileName = '') {
+        fetch(`/file/list?fileName=${encodeURIComponent(fileName)}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.code === 200) {
+                    const fileList = data.data;
+                    const fileTableBody = document.getElementById('fileTableBody');
+                    if (fileList.length > 0) {
+                        // 渲染文件列表
+                        fileTableBody.innerHTML = fileList.map(file => `
+                        <tr>
+                            <td>${file.fileName}</td>
+                            <td>${file.fileType}</td>
+                            <td>${file.formattedFileSize || (file.fileSize + 'B')}</td>
+                            <td>${file.uploadTime}</td>
+                            <td>
+                                <a href="/file/download/${file.fileId}">
+                                    <button class="btn btn-primary">下载</button>
+                                </a>
+                            </td>
+                        </tr>
+                    `).join('');
+                    } else {
+                        fileTableBody.innerHTML = '<tr><td colspan="5" class="empty-data">暂无文件</td></tr>';
+                    }
+                } else {
+                    showToast(data.msg, 'error');
+                }
+            })
+            .catch(err => {
+                showToast('加载文件列表失败：' + err.message, 'error');
+            });
+    }
+    // 搜索文件
+    function searchFile() {
+        const fileName = document.getElementById('fileSearchInput').value.trim();
+        loadFileList(fileName);
+    }
+
+    // 关闭弹窗
+    function closeModal(modalId) {
+        document.getElementById(modalId).style.display = 'none';
+    }
+
+    // 打开上传弹窗
+    function openUploadModal() {
+        document.getElementById('uploadModal').style.display = 'flex';
+        document.getElementById('fileInput').value = '';
+        document.getElementById('fileNameTip').textContent = '未选择文件';
+    }
+
+    // 显示提示
+    function showToast(msg, type) {
+        const toast = document.getElementById('toast');
+        toast.textContent = msg;
+        toast.className = `toast toast-${type}`;
+        toast.style.display = 'block';
+        setTimeout(() => toast.style.display = 'none', 3000);
+    }
+
+    // ========== 用户管理逻辑 ==========
     function loadUserList(username = '') {
         fetch(`/user/list?username=${encodeURIComponent(username)}`)
-            .then(response => response.json())
+            .then(res => res.json())
             .then(data => {
                 if (data.code === 200) {
                     const userList = data.data;
@@ -574,98 +501,114 @@
                                 <td>${user.age}</td>
                                 <td>${user.phone}</td>
                                 <td>
-                                    <button class="btn btn-warning" onclick="openUserModal('edit', ${JSON.stringify(user)})">编辑</button>
-                                    <button class="btn btn-danger" onclick="deleteUser(${user.id})">删除</button>
+                                    <button class="btn btn-primary" onclick="openUserModal('edit', ${JSON.stringify(user).replace(/"/g, '&quot;')})">编辑</button>
+                                    <button class="btn btn-close" onclick="deleteUser(${user.id})">删除</button>
                                 </td>
                             </tr>
                         `).join('');
                     } else {
-                        userTableBody.innerHTML = '<tr><td colspan="5" class="empty-data">暂无用户信息，请点击"新增用户"按钮添加用户</td></tr>';
+                        userTableBody.innerHTML = '<tr><td colspan="5" class="empty-data">暂无用户</td></tr>';
                     }
-                    document.getElementById('userTotalCount').textContent = userList.length;
                 } else {
                     showToast(data.msg, 'error');
                 }
             })
-            .catch(error => {
-                showToast('加载用户列表失败：' + error.message, 'error');
+            .catch(err => {
+                showToast('加载用户列表失败：' + err.message, 'error');
             });
     }
 
-    // 搜索用户
     function searchUser() {
         const username = document.getElementById('userSearchInput').value.trim();
         loadUserList(username);
     }
 
-    // 打开用户弹窗（新增/编辑）
     function openUserModal(type = 'add', user = null) {
-        document.getElementById('userModal').style.display = 'flex';
+        const modal = document.getElementById('userModal');
+        const modalTitle = document.getElementById('userModalTitle');
+        const userIdInput = document.getElementById('userId');
+        const userNameInput = document.getElementById('userName');
+        const userAgeInput = document.getElementById('userAge');
+        const userPhoneInput = document.getElementById('userPhone');
+
+        // 重置弹窗内容
+        userNameInput.value = '';
+        userAgeInput.value = '';
+        userPhoneInput.value = '';
+        userIdInput.value = '';
+
         if (type === 'add') {
-            document.getElementById('userModalTitle').textContent = '新增用户';
-            document.getElementById('userId').value = '';
-            document.getElementById('username').value = '';
-            document.getElementById('age').value = '';
-            document.getElementById('phone').value = '';
-        } else {
-            document.getElementById('userModalTitle').textContent = '编辑用户';
-            document.getElementById('userId').value = user.id;
-            document.getElementById('username').value = user.username;
-            document.getElementById('age').value = user.age;
-            document.getElementById('phone').value = user.phone;
+            modalTitle.textContent = '新增用户';
+        } else if (type === 'edit' && user) {
+            modalTitle.textContent = '编辑用户';
+            // 填充现有用户信息
+            userIdInput.value = user.id;
+            userNameInput.value = user.username;
+            userAgeInput.value = user.age;
+            userPhoneInput.value = user.phone;
         }
+
+        // 显示弹窗
+        modal.style.display = 'flex';
     }
-
-    // 提交用户（新增/编辑）
+    // 新增：提交用户（新增/编辑）
     function submitUser() {
-        const id = document.getElementById('userId').value;
-        const username = document.getElementById('username').value.trim();
-        const age = document.getElementById('age').value;
-        const phone = document.getElementById('phone').value.trim();
+        const userId = document.getElementById('userId').value;
+        const userName = document.getElementById('userName').value.trim();
+        const userAge = document.getElementById('userAge').value.trim();
+        const userPhone = document.getElementById('userPhone').value.trim();
 
-        // 校验
-        if (!username) {
-            showToast('用户名不能为空', 'error');
+        // 前端校验
+        if (!userName || !userAge || !userPhone) {
+            showToast('请填写完整信息', 'error');
             return;
         }
-        if (age && (age < 0 || age > 150)) {
-            showToast('年龄必须在0-150之间', 'error');
+        if (isNaN(userAge) || userAge < 0 || userAge > 150) {
+            showToast('年龄格式错误', 'error');
             return;
         }
-        if (!phone) {
-            showToast('手机号不能为空', 'error');
+        if (!/^1[3-9]\d{9}$/.test(userPhone)) {
+            showToast('手机号格式错误', 'error');
             return;
         }
 
-        const userData = { username, age: age ? parseInt(age) : null, phone };
-        const url = id ? '/user/update' : '/user/add';
-        const method = id ? 'PUT' : 'POST';
+        // 构造请求参数
+        const userData = {
+            username: userName,
+            age: parseInt(userAge),
+            phone: userPhone
+        };
+        let url = '/user/add';
+        if (userId) {
+            // 编辑用户：补充ID
+            userData.id = userId;
+            url = '/user/edit';
+        }
 
+        // 发送请求
         fetch(url, {
-            method: method,
+            method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(userData)
         })
-            .then(response => response.json())
+            .then(res => res.json())
             .then(data => {
                 if (data.code === 200) {
-                    showToast(id ? '用户编辑成功' : '用户新增成功', 'success');
+                    showToast(userId ? '用户编辑成功' : '用户新增成功', 'success');
                     closeModal('userModal');
-                    loadUserList();
+                    loadUserList(); // 刷新用户列表
                 } else {
                     showToast(data.msg, 'error');
                 }
             })
-            .catch(error => {
-                showToast((id ? '编辑' : '新增') + '用户失败：' + error.message, 'error');
+            .catch(err => {
+                showToast('操作失败：' + err.message, 'error');
             });
     }
-
-    // 删除用户
     function deleteUser(id) {
-        if (confirm('确定要删除该用户吗？')) {
+        if (confirm('确定删除该用户吗？')) {
             fetch(`/user/delete/${id}`, { method: 'DELETE' })
-                .then(response => response.json())
+                .then(res => res.json())
                 .then(data => {
                     if (data.code === 200) {
                         showToast('用户删除成功', 'success');
@@ -674,30 +617,10 @@
                         showToast(data.msg, 'error');
                     }
                 })
-                .catch(error => {
-                    showToast('删除用户失败：' + error.message, 'error');
+                .catch(err => {
+                    showToast('删除失败：' + err.message, 'error');
                 });
         }
-    }
-
-    // 通用方法
-    // 关闭弹窗
-    function closeModal(modalId) {
-        document.getElementById(modalId).style.display = 'none';
-    }
-
-    // 显示提示框
-    function showToast(msg, type) {
-        const toast = document.getElementById('toast');
-        toast.textContent = msg;
-        toast.className = 'toast toast-' + type;
-        toast.style.display = 'block';
-        setTimeout(() => { toast.style.display = 'none'; }, 3000);
-    }
-
-    // 初始化加载文件列表
-    window.onload = function() {
-        loadFileList();
     }
 </script>
 </body>

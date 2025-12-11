@@ -1,55 +1,56 @@
 package com.spring.demo.entity;
 
 public class ResultVO {
-    // 响应码：200成功，500失败
-    private Integer code;
-    // 响应消息
+    private int code;
     private String msg;
-    // 响应数据
     private Object data;
 
-    // 静态构造方法
-    public static ResultVO success() {
-        return new ResultVO(200, "操作成功", null);
+    // 1. 无数据的成功返回
+    public static ResultVO success(String msg) {
+        ResultVO result = new ResultVO();
+        result.setCode(200);
+        result.setMsg(msg);
+        return result;
     }
 
-    public static ResultVO success(Object data) {
-        return new ResultVO(200, "操作成功", data);
+    // 2. 带任意Object数据的成功返回（覆盖ChunkUploadResult等自定义对象）
+    public static ResultVO success(String msg, Object data) {
+        ResultVO result = new ResultVO();
+        result.setCode(200);
+        result.setMsg(msg);
+        result.setData(data);
+        return result;
     }
 
+    // 3. 带long类型数据的成功返回（覆盖chunkSize等长整型）
+    public static ResultVO success(String msg, long data) {
+        ResultVO result = new ResultVO();
+        result.setCode(200);
+        result.setMsg(msg);
+        result.setData(data);
+        return result;
+    }
+
+    // 错误返回方法（保留原有）
     public static ResultVO error(String msg) {
-        return new ResultVO(500, msg, null);
+        ResultVO result = new ResultVO();
+        result.setCode(500);
+        result.setMsg(msg);
+        return result;
     }
 
-    // 私有构造器
-    private ResultVO(Integer code, String msg, Object data) {
-        this.code = code;
-        this.msg = msg;
-        this.data = data;
+    public static ResultVO error(int code, String msg) {
+        ResultVO result = new ResultVO();
+        result.setCode(code);
+        result.setMsg(msg);
+        return result;
     }
 
-    // 手动编写getter/setter
-    public Integer getCode() {
-        return code;
-    }
-
-    public void setCode(Integer code) {
-        this.code = code;
-    }
-
-    public String getMsg() {
-        return msg;
-    }
-
-    public void setMsg(String msg) {
-        this.msg = msg;
-    }
-
-    public Object getData() {
-        return data;
-    }
-
-    public void setData(Object data) {
-        this.data = data;
-    }
+    // getter/setter（必须保留）
+    public int getCode() { return code; }
+    public void setCode(int code) { this.code = code; }
+    public String getMsg() { return msg; }
+    public void setMsg(String msg) { this.msg = msg; }
+    public Object getData() { return data; }
+    public void setData(Object data) { this.data = data; }
 }

@@ -19,7 +19,9 @@ spring:
     prefix: classpath:/templates/
     suffix: .html
 
-# 自定义配置
 file:
   upload:
-    path: ./src/main/resources/static/uploads/
+    path: ${user.dir}/upload  # 项目根目录下的upload文件夹
+    chunk:
+      size: 5242880
+      temp-path: ${user.dir}/upload/temp

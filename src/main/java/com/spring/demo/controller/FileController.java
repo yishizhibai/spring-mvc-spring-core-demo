@@ -1,11 +1,11 @@
 package com.spring.demo.controller;
 
+import com.spring.demo.aop.annotation.RateLimit;
 import com.spring.demo.entity.FileInfo;
 import com.spring.demo.entity.ResultVO;
 import com.spring.demo.service.file.FileService;
+import com.spring.demo.util.FileChunkUtils;
 import com.spring.demo.util.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
@@ -16,8 +16,8 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
@@ -25,78 +25,115 @@ import java.util.List;
 @Controller
 @RequestMapping("/file")
 public class FileController {
-    private static final Logger log = LoggerFactory.getLogger(FileController.class);
-
     private final FileService fileService;
     private final FileUtils fileUtils;
+    private final FileChunkUtils fileChunkUtils;
 
-    @Value("${file.upload.path}")
-    private String uploadPath;
+    @Value("${file.upload.chunk.size}")
+    private long chunkSize;
 
     @Autowired
-    public FileController(FileService fileService, FileUtils fileUtils) {
+    public FileController(FileService fileService, FileUtils fileUtils, FileChunkUtils fileChunkUtils) {
         this.fileService = fileService;
         this.fileUtils = fileUtils;
+        this.fileChunkUtils = fileChunkUtils;
     }
 
     @GetMapping("/index")
     public String index(Model model, @RequestParam(required = false) String fileName) {
-        // 查询文件列表（支持搜索）
-        List<FileInfo> fileList;
-        if (fileName != null && !fileName.trim().isEmpty()) {
-            fileList = fileService.searchFileByName(fileName.trim());
-        } else {
-            fileList = fileService.listAllFiles();
-        }
-
-        // 修正：格式化文件大小并赋值给新增字段
-        for (FileInfo fileInfo : fileList) {
-            String formattedSize = fileUtils.formatFileSize(fileInfo.getFileSize());
-            fileInfo.setFormattedFileSize(formattedSize); // 赋值给字符串字段
-        }
-
-        // 传递数据到前端
+        List<FileInfo> fileList = fileName != null ? fileService.searchFileByName(fileName) : fileService.listAllFiles();
+        fileList.forEach(f -> f.setFormattedFileSize(FileUtils.formatFileSize(f.getFileSize())));
         model.addAttribute("fileList", fileList);
         model.addAttribute("searchName", fileName == null ? "" : fileName);
-        model.addAttribute("totalCount", fileList.size());
-        return "index"; // 对应templates/index.html
+        return "index";
     }
 
-    // 其他方法（upload/download/toIndex）保持不变...
     @PostMapping("/upload")
     @ResponseBody
+    @RateLimit(qps = 5, message = "上传频繁，请稍后再试")
     public ResultVO upload(@RequestParam("file") MultipartFile file) {
         return fileService.upload(file);
     }
 
+    @PostMapping("/upload/chunk")
+    @ResponseBody
+    @RateLimit(qps = 10, message = "分片上传频繁，请稍后再试")
+    public ResultVO uploadChunk(
+            @RequestParam("file") MultipartFile chunkFile,
+            @RequestParam("fileMd5") String fileMd5,
+            @RequestParam("chunkIndex") int chunkIndex,
+            @RequestParam("totalChunks") int totalChunks
+    ) {
+        try {
+            String chunkPath = fileChunkUtils.saveChunkFile(chunkFile.getBytes(), fileMd5, chunkIndex);
+            if (chunkPath == null) return ResultVO.error("分片" + chunkIndex + "上传失败");
+            return ResultVO.success("分片" + chunkIndex + "上传成功", new ChunkUploadResult(chunkIndex, totalChunks, fileMd5));
+        } catch (IOException e) {
+            return ResultVO.error("分片上传失败：" + e.getMessage());
+        }
+    }
+
+    @PostMapping("/upload/merge")
+    @ResponseBody
+    public ResultVO mergeChunks(
+            @RequestParam("fileMd5") String fileMd5,
+            @RequestParam("fileName") String fileName,
+            @RequestParam("fileSuffix") String fileSuffix
+    ) {
+        String targetPath = fileChunkUtils.mergeChunkFiles(fileMd5, fileName, fileSuffix);
+        if (targetPath == null) return ResultVO.error("合并失败");
+        return fileService.saveFileInfo(fileName, fileSuffix, targetPath);
+    }
+
+    @GetMapping("/chunk/size")
+    @ResponseBody
+    public ResultVO getChunkSize() {
+        return ResultVO.success("获取分片大小成功", chunkSize);
+    }
+
     @GetMapping("/download/{fileId}")
     public ResponseEntity<byte[]> download(@PathVariable String fileId) {
-        // 查询文件信息
         FileInfo fileInfo = fileService.getFileById(fileId);
-        if (fileInfo == null) {
-            log.error("下载文件失败：ID{}不存在", fileId);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
-        }
+        if (fileInfo == null) return ResponseEntity.notFound().build();
 
         try {
-            // 读取文件字节
             byte[] fileBytes = Files.readAllBytes(Paths.get(fileInfo.getFilePath()));
-
-            // 构建响应头（设置下载文件名）
             HttpHeaders headers = new HttpHeaders();
-            String downloadFileName = fileInfo.getFileName() + "." + fileInfo.getFileSuffix();
-            headers.setContentDispositionFormData("attachment", new String(downloadFileName.getBytes("UTF-8"), "ISO-8859-1"));
+            String downloadName = fileInfo.getFileName() + "." + fileInfo.getFileSuffix();
+            headers.setContentDispositionFormData("attachment",
+                    new String(downloadName.getBytes(StandardCharsets.UTF_8), StandardCharsets.ISO_8859_1));
             headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-
             return new ResponseEntity<>(fileBytes, headers, HttpStatus.OK);
         } catch (IOException e) {
-            log.error("下载文件失败：ID{}", fileId, e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }
 
-    @GetMapping("/")
-    public String toIndex() {
-        return "redirect:/file/index";
+    @GetMapping("/list")
+    @ResponseBody
+    public ResultVO listFiles(@RequestParam(required = false) String fileName) {
+        List<FileInfo> fileList = fileName != null ? fileService.searchFileByName(fileName) : fileService.listAllFiles();
+        fileList.forEach(f -> f.setFormattedFileSize(FileUtils.formatFileSize(f.getFileSize())));
+        return ResultVO.success("查询成功", fileList);
+    }
+
+    public static class ChunkUploadResult {
+        private int chunkIndex;
+        private int totalChunks;
+        private String fileMd5;
+
+        public ChunkUploadResult(int chunkIndex, int totalChunks, String fileMd5) {
+            this.chunkIndex = chunkIndex;
+            this.totalChunks = totalChunks;
+            this.fileMd5 = fileMd5;
+        }
+
+        // getter/setter
+        public int getChunkIndex() { return chunkIndex; }
+        public void setChunkIndex(int chunkIndex) { this.chunkIndex = chunkIndex; }
+        public int getTotalChunks() { return totalChunks; }
+        public void setTotalChunks(int totalChunks) { this.totalChunks = totalChunks; }
+        public String getFileMd5() { return fileMd5; }
+        public void setFileMd5(String fileMd5) { this.fileMd5 = fileMd5; }
     }
 }
