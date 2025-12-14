@@ -25,3 +25,14 @@ file:
     chunk:
       size: 5242880
       temp-path: ${user.dir}/upload/temp
+
+# 日志配置
+logging:
+  level:
+    # 开启Spring上下文日志（打印Bean的创建、注入过程）
+    org.springframework.context: INFO
+    # 开启项目包下的日志（可选，便于查看业务日志）
+    com.spring.demo: INFO
+  pattern:
+    # 日志格式：时间 | 日志级别 | 线程名 | 类名 | 日志信息
+    console: "%d{yyyy-MM-dd HH:mm:ss} | %-5level | %thread | %logger{50} | %msg%n"

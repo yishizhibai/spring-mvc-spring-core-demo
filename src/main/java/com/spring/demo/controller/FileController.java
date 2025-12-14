@@ -16,6 +16,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -75,6 +76,8 @@ public class FileController {
 
     @PostMapping("/upload/merge")
     @ResponseBody
+    // 可根据需要添加限流注解
+    // @RateLimit(qps = 5, message = "文件合并频繁，请稍后再试")
     public ResultVO mergeChunks(
             @RequestParam("fileMd5") String fileMd5,
             @RequestParam("fileName") String fileName,
@@ -87,11 +90,15 @@ public class FileController {
 
     @GetMapping("/chunk/size")
     @ResponseBody
+    // 可根据需要添加限流注解
+    // @RateLimit(qps = 20, message = "获取分片大小频繁，请稍后再试")
     public ResultVO getChunkSize() {
         return ResultVO.success("获取分片大小成功", chunkSize);
     }
 
     @GetMapping("/download/{fileId}")
+    // 可根据需要添加限流注解
+    // @RateLimit(qps = 5, message = "文件下载频繁，请稍后再试")
     public ResponseEntity<byte[]> download(@PathVariable String fileId) {
         FileInfo fileInfo = fileService.getFileById(fileId);
         if (fileInfo == null) return ResponseEntity.notFound().build();
@@ -111,12 +118,15 @@ public class FileController {
 
     @GetMapping("/list")
     @ResponseBody
+    // 可根据需要添加限流注解
+    // @RateLimit(qps = 10, message = "文件列表查询频繁，请稍后再试")
     public ResultVO listFiles(@RequestParam(required = false) String fileName) {
         List<FileInfo> fileList = fileName != null ? fileService.searchFileByName(fileName) : fileService.listAllFiles();
         fileList.forEach(f -> f.setFormattedFileSize(FileUtils.formatFileSize(f.getFileSize())));
         return ResultVO.success("查询成功", fileList);
     }
 
+    // 内部类：分片上传结果
     public static class ChunkUploadResult {
         private int chunkIndex;
         private int totalChunks;
@@ -128,12 +138,29 @@ public class FileController {
             this.fileMd5 = fileMd5;
         }
 
-        // getter/setter
-        public int getChunkIndex() { return chunkIndex; }
-        public void setChunkIndex(int chunkIndex) { this.chunkIndex = chunkIndex; }
-        public int getTotalChunks() { return totalChunks; }
-        public void setTotalChunks(int totalChunks) { this.totalChunks = totalChunks; }
-        public String getFileMd5() { return fileMd5; }
-        public void setFileMd5(String fileMd5) { this.fileMd5 = fileMd5; }
+        // getter/setter 方法（必须添加，否则前端无法获取数据）
+        public int getChunkIndex() {
+            return chunkIndex;
+        }
+
+        public void setChunkIndex(int chunkIndex) {
+            this.chunkIndex = chunkIndex;
+        }
+
+        public int getTotalChunks() {
+            return totalChunks;
+        }
+
+        public void setTotalChunks(int totalChunks) {
+            this.totalChunks = totalChunks;
+        }
+
+        public String getFileMd5() {
+            return fileMd5;
+        }
+
+        public void setFileMd5(String fileMd5) {
+            this.fileMd5 = fileMd5;
+        }
     }
 }

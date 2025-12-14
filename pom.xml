@@ -44,7 +44,11 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-thymeleaf</artifactId>
         </dependency>
-
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>32.1.3-jre</version>
+        </dependency>
         <!-- 日志依赖（Spring Boot默认集成，显式声明确保兼容性） -->
         <dependency>
             <groupId>org.slf4j</groupId>
