@@ -2,28 +2,31 @@ package com.spring.demo.mapper;
 
 import com.spring.demo.entity.User;
 import org.apache.ibatis.annotations.*;
-
 import java.util.List;
 
 @Mapper
 public interface UserMapper {
-    // 新增用户：补充create_time字段
-    @Insert("INSERT INTO user(id, username, age, phone, create_time) VALUES(#{id}, #{username}, #{age}, #{phone}, #{createTime})")
+    // 原有方法保留
+    @Insert("INSERT INTO user(id, username, age, phone) VALUES(#{id}, #{username}, #{age}, #{phone})")
     int insertUser(User user);
 
-    // 根据ID查询用户
-    @Select("SELECT * FROM user WHERE id = #{id}")
-    User selectUserById(String id);
-
-    // 查询所有用户
-    @Select("SELECT * FROM user")
-    List<User> selectAllUsers();
-
-    // 更新用户
     @Update("UPDATE user SET username = #{username}, age = #{age}, phone = #{phone} WHERE id = #{id}")
     int updateUser(User user);
 
-    // 删除用户
+    @Select("SELECT id, username, age, phone FROM user")
+    List<User> selectAllUser();
+
+    @Select("SELECT id, username, age, phone FROM user WHERE id = #{id}")
+    User selectUserById(String id);
+
     @Delete("DELETE FROM user WHERE id = #{id}")
     int deleteUserById(String id);
+
+    @Select("SELECT COUNT(*) FROM user")
+    long selectUserTotal();
+    @Select("SELECT id, username, age, phone FROM user LIMIT #{offset}, #{pageSize}")
+    List<User> selectUserByPage(int offset, int pageSize);
+
+    @Select("SELECT id, username, age, phone, create_time AS createTime FROM user WHERE username LIKE CONCAT('%', #{usernameKeyword}, '%')")
+    List<User> selectUserByUsername(String usernameKeyword);
 }
