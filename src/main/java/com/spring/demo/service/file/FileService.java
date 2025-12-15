@@ -12,4 +12,5 @@ public interface FileService {
     List<FileInfo> searchFileByName(String fileName);
     FileInfo getFileById(String fileId);
     ResultVO saveFileInfo(String fileName, String fileSuffix, String filePath);
+    int deleteFileById(String fileId);
 }

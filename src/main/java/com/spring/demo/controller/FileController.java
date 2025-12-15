@@ -24,10 +24,14 @@ public class FileController {
         return fileService.upload(file);
     }
 
-    // 查询所有文件
+    // FileController.java
     @GetMapping("/list")
     public ResultVO listAllFiles() {
         List<FileInfo> fileList = fileService.listAllFiles();
+        // 新增日志：打印每个文件的fileId
+        for (FileInfo file : fileList) {
+            System.out.println("文件ID：" + file.getFileId() + "，文件名：" + file.getFileName());
+        }
         return ResultVO.success("查询成功", fileList);
     }
 
@@ -43,5 +47,11 @@ public class FileController {
     public ResultVO getFileById(@PathVariable String fileId) {
         FileInfo fileInfo = fileService.getFileById(fileId);
         return fileInfo != null ? ResultVO.success("查询成功", fileInfo) : ResultVO.error("文件不存在");
+    }
+
+    @DeleteMapping("/{fileId}")
+    public ResultVO deleteFileById(@PathVariable String fileId) {
+        int rows = fileService.deleteFileById(fileId);
+        return rows > 0 ? ResultVO.success("文件删除成功", null) : ResultVO.error("文件删除失败");
     }
 }

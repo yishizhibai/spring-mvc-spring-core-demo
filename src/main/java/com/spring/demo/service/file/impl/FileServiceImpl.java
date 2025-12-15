@@ -8,6 +8,7 @@ import com.spring.demo.util.FileUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -24,32 +25,53 @@ public class FileServiceImpl implements FileService {
     @Override
     public ResultVO upload(MultipartFile file) {
         try {
+            FileInfo fileInfo = new FileInfo();
+            // 关键：生成唯一的fileId（UUID），确保插入数据库的id字段不为null
+            fileInfo.setFileId(UUID.randomUUID().toString().replace("-", ""));
             String originalFilename = file.getOriginalFilename();
             if (originalFilename == null || originalFilename.isEmpty()) {
                 return ResultVO.error("文件名不能为空");
             }
-
-            // 拆分文件名和后缀
-            String fileSuffix = originalFilename.substring(originalFilename.lastIndexOf(".") + 1);
-            String fileName = originalFilename.substring(0, originalFilename.lastIndexOf("."));
-
-            // 封装文件信息（包含二进制数据）
-            FileInfo fileInfo = new FileInfo();
-            fileInfo.setFileId(UUID.randomUUID().toString());
+            // 处理文件名和后缀
+            String fileName = originalFilename.contains(".")
+                    ? originalFilename.substring(0, originalFilename.lastIndexOf("."))
+                    : originalFilename;
+            String fileSuffix = originalFilename.contains(".")
+                    ? originalFilename.substring(originalFilename.lastIndexOf(".") + 1)
+                    : "";
+            // 赋值其他字段
             fileInfo.setFileName(fileName);
             fileInfo.setFileSuffix(fileSuffix);
-            fileInfo.setFileType(FileUtils.getFileType(fileSuffix));
+            fileInfo.setFileType(getFileType(fileSuffix)); // 需实现文件类型判断方法
             fileInfo.setFileSize(file.getSize());
-            fileInfo.setFilePath("数据库存储"); // 标记数据存在数据库
-            fileInfo.setUserId("default_user_id");
+            fileInfo.setFilePath("database_storage"); // 标记存储方式
+            fileInfo.setUserId("default_user"); // 默认用户ID
             fileInfo.setUploadTime(new Date());
-            fileInfo.setFileData(file.getBytes()); // 核心：获取文件二进制数据并赋值
+            fileInfo.setFileData(file.getBytes()); // 存储文件二进制数据
 
-            // 插入数据库（包含二进制数据）
+            // 插入数据库
             int rows = fileInfoMapper.insertFileInfo(fileInfo);
-            return rows > 0 ? ResultVO.success("文件保存到数据库成功", fileInfo) : ResultVO.error("保存文件失败");
+            return rows > 0 ? ResultVO.success("文件上传成功", fileInfo) : ResultVO.error("文件上传失败");
         } catch (Exception e) {
+            e.printStackTrace();
             return ResultVO.error("文件上传失败：" + e.getMessage());
+        }
+    }
+
+    // 辅助方法：根据后缀判断文件类型
+    private String getFileType(String suffix) {
+        if (suffix == null || suffix.isEmpty()) {
+            return "未知类型";
+        }
+        suffix = suffix.toLowerCase();
+        if (Arrays.asList("jpg", "png", "gif", "jpeg").contains(suffix)) {
+            return "图片";
+        } else if (Arrays.asList("txt", "doc", "docx", "pdf").contains(suffix)) {
+            return "文档";
+        } else if (Arrays.asList("mp4", "avi", "mov").contains(suffix)) {
+            return "视频";
+        } else {
+            return "其他";
         }
     }
 
@@ -67,6 +89,10 @@ public class FileServiceImpl implements FileService {
     @Override
     public FileInfo getFileById(String fileId) {
         return fileInfoMapper.selectFileInfoById(fileId);
+    }
+    @Override
+    public int deleteFileById(String fileId) {
+        return fileInfoMapper.deleteFileInfoById(fileId);
     }
 
     @Override

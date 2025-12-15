@@ -23,7 +23,6 @@
         <java.version>17</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <!-- 与上一个项目保持一致的版本号，便于统一管理 -->
         <mybatis-spring-boot-starter.version>3.0.3</mybatis-spring-boot-starter.version>
         <pagehelper-spring-boot-starter.version>1.4.7</pagehelper-spring-boot-starter.version>
         <aliyun-oss.version>3.17.4</aliyun-oss.version>
