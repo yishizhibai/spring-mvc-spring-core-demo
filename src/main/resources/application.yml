@@ -1,17 +1,30 @@
 # 服务器配置
 server:
   port: 8080
-  servlet:
-    context-path: /
 
-# 文件上传配置
+# 新增：文件上传相关配置（包含所有缺失的占位符）
+file:
+  upload:
+    path: static/uploads        # 新增：文件上传根路径（解决${file.upload.path}）
+    chunk:
+      temp-path: static/uploads/temp  # 文件分片临时路径
+      chunk-size: 5242880             # 分片大小（5MB）
+
+# Spring核心配置
 spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/spring_demo?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: 324032
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
   servlet:
     multipart:
-      enabled: true
       max-file-size: 10MB
-      max-request-size: 10MB
-  # Thymeleaf配置
+      max-request-size: 100MB
   thymeleaf:
     cache: false
     mode: HTML
@@ -19,20 +32,25 @@ spring:
     prefix: classpath:/templates/
     suffix: .html
 
-file:
-  upload:
-    path: ${user.dir}/upload  # 项目根目录下的upload文件夹
-    chunk:
-      size: 5242880
-      temp-path: ${user.dir}/upload/temp
-
 # 日志配置
 logging:
   level:
-    # 开启Spring上下文日志（打印Bean的创建、注入过程）
     org.springframework.context: INFO
-    # 开启项目包下的日志（可选，便于查看业务日志）
     com.spring.demo: INFO
   pattern:
-    # 日志格式：时间 | 日志级别 | 线程名 | 类名 | 日志信息
     console: "%d{yyyy-MM-dd HH:mm:ss} | %-5level | %thread | %logger{50} | %msg%n"
+
+# MyBatis配置
+mybatis:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    map-underscore-to-camel-case: true
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.spring.demo.entity
+
+# 阿里云OSS配置
+aliyun:
+  oss:
+    endpoint: https://oss-cn-beijing.aliyuncs.com
+    bucketName: java-ai
+    region: cn-beijing

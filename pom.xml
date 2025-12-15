@@ -3,7 +3,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <!-- Spring Boot父工程（3.4.12版本） -->
+    <!-- Spring Boot父工程（保持原项目的3.4.12版本） -->
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
@@ -11,22 +11,31 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
 
-    <!-- 项目基础信息（与你创建项目时的配置一致） -->
+    <!-- 项目基础信息（与原项目一致） -->
     <groupId>com.spring.demo</groupId>
     <artifactId>spring-mvc-spring-core-demo</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>spring-mvc-spring-core-demo</name>
-    <description>整合实验三（Spring MVC）+ 实验四（Spring DI/AOP）的Demo</description>
+    <description>整合实验三（Spring MVC）+ 实验四（Spring DI/AOP）+ 实验五（MyBatis）的Demo</description>
 
     <!-- 全局属性配置 -->
     <properties>
         <java.version>17</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <!-- 与上一个项目保持一致的版本号，便于统一管理 -->
+        <mybatis-spring-boot-starter.version>3.0.3</mybatis-spring-boot-starter.version>
+        <pagehelper-spring-boot-starter.version>1.4.7</pagehelper-spring-boot-starter.version>
+        <aliyun-oss.version>3.17.4</aliyun-oss.version>
+        <jjwt.version>0.9.1</jjwt.version>
+        <jaxb-api.version>2.3.1</jaxb-api.version>
+        <activation.version>1.1.1</activation.version>
+        <jaxb-runtime.version>2.3.3</jaxb-runtime.version>
     </properties>
 
     <!-- 核心依赖 -->
     <dependencies>
+        <!-- ===================== 原有核心依赖（实验三、四） ===================== -->
         <!-- Spring Web（MVC核心，包含Tomcat、JSON解析） -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -44,11 +53,14 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-thymeleaf</artifactId>
         </dependency>
+
+        <!-- Guava工具类（原项目依赖，保留） -->
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
             <version>32.1.3-jre</version>
         </dependency>
+
         <!-- 日志依赖（Spring Boot默认集成，显式声明确保兼容性） -->
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -61,21 +73,98 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- 测试依赖（可选，可保留） -->
+        <!-- 测试依赖（原项目保留，新增MyBatis测试依赖） -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
+        </dependency>
+
+        <!-- ===================== 实验五新增依赖（与上一个项目版本一致） ===================== -->
+        <!-- MyBatis整合Spring Boot启动器（版本与上一个项目一致：3.0.3） -->
+        <dependency>
+            <groupId>org.mybatis.spring.boot</groupId>
+            <artifactId>mybatis-spring-boot-starter</artifactId>
+            <version>${mybatis-spring-boot-starter.version}</version>
+        </dependency>
+
+        <!-- MyBatis测试依赖（与上一个项目版本一致，用于Mapper单元测试） -->
+        <dependency>
+            <groupId>org.mybatis.spring.boot</groupId>
+            <artifactId>mybatis-spring-boot-starter-test</artifactId>
+            <version>${mybatis-spring-boot-starter.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- MySQL驱动（与上一个项目一致，runtime作用域） -->
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- Lombok（与上一个项目一致，简化实体类代码） -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- 分页插件PageHelper（版本与上一个项目一致：1.4.7） -->
+        <dependency>
+            <groupId>com.github.pagehelper</groupId>
+            <artifactId>pagehelper-spring-boot-starter</artifactId>
+            <version>${pagehelper-spring-boot-starter.version}</version>
+        </dependency>
+
+        <!-- ===================== 可选：上一个项目的OSS、JWT等依赖（若需保留可添加，按需取舍） ===================== -->
+        <!-- 阿里云OSS依赖（若实验五涉及文件存储可保留，否则可注释） -->
+        <dependency>
+            <groupId>com.aliyun.oss</groupId>
+            <artifactId>aliyun-sdk-oss</artifactId>
+            <version>${aliyun-oss.version}</version>
+        </dependency>
+
+        <!-- JAXB相关依赖（OSS依赖的辅助包，若移除OSS可注释） -->
+        <dependency>
+            <groupId>javax.xml.bind</groupId>
+            <artifactId>jaxb-api</artifactId>
+            <version>${jaxb-api.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>javax.activation</groupId>
+            <artifactId>activation</artifactId>
+            <version>${activation.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish.jaxb</groupId>
+            <artifactId>jaxb-runtime</artifactId>
+            <version>${jaxb-runtime.version}</version>
+        </dependency>
+
+        <!-- JWT依赖（若实验五涉及用户认证可保留，否则可注释） -->
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt</artifactId>
+            <version>${jjwt.version}</version>
         </dependency>
     </dependencies>
 
     <!-- 构建配置 -->
     <build>
         <plugins>
-            <!-- Spring Boot打包插件 -->
+            <!-- Spring Boot打包插件（保留原配置，添加Lombok排除配置，与上一个项目一致） -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
+                </configuration>
                 <executions>
                     <execution>
                         <goals>
@@ -85,7 +174,7 @@
                 </executions>
             </plugin>
 
-            <!-- Java编译插件（确保JDK17编译） -->
+            <!-- Java编译插件（确保JDK17编译，原项目配置保留） -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
