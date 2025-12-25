@@ -11,7 +11,6 @@ public class User {
     private String phone;
     private Date createTime; // 对应数据库create_time
 
-    // 若未用Lombok，手动添加setCreateTime
     public void setCreateTime(Date createTime) {
         this.createTime = createTime;
     }

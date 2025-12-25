@@ -182,7 +182,7 @@
         </thead>
         <tbody id="fileTableBody">
         <tr>
-            <td colspan="5" class="empty-data">暂无文件</td>
+            <td colspan="5" class="empty-data">加载中...</td>
         </tr>
         </tbody>
     </table>
@@ -202,7 +202,7 @@
         </thead>
         <tbody id="userTableBody">
         <tr>
-            <td colspan="5" class="empty-data">暂无用户</td>
+            <td colspan="5" class="empty-data">加载中...</td>
         </tr>
         </tbody>
     </table>
@@ -254,8 +254,12 @@
 
 <script>
     let chunkSize = 0;
-    // ========== 本地缓存文件列表，避免重复请求 ==========
+    // 文件列表缓存
     let fileListCache = [];
+    // 用户列表缓存 + 加载状态
+    let userPageCache = null;
+    let isUserLoading = false;
+    let isFileLoading = false;
 
     // ===================== 通用工具函数 =====================
     function showToast(msg, type = 'success') {
@@ -299,32 +303,35 @@
 
     // ===================== 标签页切换 =====================
     function switchTab(tabName) {
-        // 移除所有激活状态
         document.querySelectorAll('.tab-bar li').forEach(li => li.classList.remove('active'));
-        // 激活当前标签
         document.querySelector(`.tab-bar li[onclick="switchTab('${tabName}')"]`).classList.add('active');
 
-        // 隐藏所有列表容器
         document.querySelectorAll('.list-container').forEach(c => c.classList.remove('active'));
-        // 显示当前容器
         const containerId = `${tabName.split('-')[0]}-container`;
         document.getElementById(containerId).classList.add('active');
 
-        // 显示/隐藏操作栏
         document.getElementById('file-operation').style.display = tabName === 'file-tab' ? 'flex' : 'none';
         document.getElementById('user-operation').style.display = tabName === 'user-tab' ? 'flex' : 'none';
 
-        // 仅首次加载数据
-        if (tabName === 'file-tab' && fileListCache.length === 0) {
+        if (tabName === 'file-tab' && !isFileLoading && fileListCache.length === 0) {
             loadFileList();
         } else if (tabName === 'user-tab') {
-            listUserByPage(1, 10);
+            // 如果已经有缓存，直接用缓存渲染，不必重拉
+            if (userPageCache && !isUserLoading) {
+                renderUserList(userPageCache.list || []);
+                renderPageControl(userPageCache.pageNum, userPageCache.pageSize, userPageCache.total);
+            } else if (!isUserLoading) {
+                listUserByPage(1, 10);
+            }
         }
     }
 
-    // ===================== 文件管理功能（核心优化） =====================
-    // 加载文件列表：仅首次执行
+    // ===================== 文件管理 =====================
     function loadFileList(fileName = '') {
+        const fileTableBody = document.getElementById('fileTableBody');
+        isFileLoading = true;
+        fileTableBody.innerHTML = '<tr><td colspan="5" class="empty-data">加载中...</td></tr>';
+
         let url = '/file/list';
         if (fileName.trim() !== '') {
             url = `/file/search?fileName=${encodeURIComponent(fileName.trim())}`;
@@ -332,14 +339,12 @@
 
         fetch(url)
             .then(res => {
-                // 统一处理响应状态
                 if (!res.ok) {
                     throw new Error(`HTTP请求失败：${res.status}`);
                 }
                 return res.json();
             })
             .then(data => {
-                // 校验后端返回的核心字段
                 if (!data || typeof data.code === 'undefined') {
                     throw new Error('后端返回数据格式错误');
                 }
@@ -351,29 +356,32 @@
             })
             .catch(err => {
                 showToast(`文件加载失败：${err.message}`, 'error');
+                fileTableBody.innerHTML = '<tr><td colspan="5" class="empty-data">加载失败</td></tr>';
                 console.error('文件列表加载错误：', err);
+            })
+            .finally(() => {
+                isFileLoading = false;
             });
     }
 
-    // 渲染文件列表
     function renderFileList(fileList) {
         const fileTableBody = document.getElementById('fileTableBody');
-        if (fileList.length > 0) {
-            fileTableBody.innerHTML = fileList.map(file => `
-                <tr>
-                    <td>${file.fileName || '未知文件名'}</td>
-                    <td>${file.fileType || '未知类型'}</td>
-                    <td>${formatFileSize(file.fileSize)}</td>
-                    <td>${formatDateTime(file.uploadTime)}</td>
-                    <td>
-                        <button class="btn btn-primary">下载</button>
-                        <button class="btn btn-danger" onclick="deleteFile('${file.fileId || ''}')">删除</button>
-                    </td>
-                </tr>
-            `).join('');
-        } else {
+        if (!fileList || fileList.length === 0) {
             fileTableBody.innerHTML = '<tr><td colspan="5" class="empty-data">暂无文件</td></tr>';
+            return;
         }
+        fileTableBody.innerHTML = fileList.map(file => `
+            <tr>
+                <td>${file.fileName || '未知文件名'}</td>
+                <td>${file.fileType || '未知类型'}</td>
+                <td>${formatFileSize(file.fileSize)}</td>
+                <td>${formatDateTime(file.uploadTime)}</td>
+                <td>
+                    <button class="btn btn-primary">下载</button>
+                    <button class="btn btn-danger" onclick="deleteFile('${file.fileId || ''}')">删除</button>
+                </td>
+            </tr>
+        `).join('');
     }
 
     function showFileName() {
@@ -388,7 +396,6 @@
         document.getElementById('fileNameTip').textContent = '未选择文件';
     }
 
-    // 上传文件：乐观更新 + 统一数据处理
     function uploadFile() {
         const fileInput = document.getElementById('fileInput');
         if (fileInput.files.length === 0) {
@@ -397,7 +404,6 @@
         }
         const file = fileInput.files[0];
 
-        // 前端立即添加临时文件
         const tempFile = {
             fileName: file.name,
             fileType: file.type || '未知类型',
@@ -408,7 +414,6 @@
         fileListCache.unshift(tempFile);
         renderFileList(fileListCache);
 
-        // 异步上传到后端
         const formData = new FormData();
         formData.append('file', file);
         fetch('/file/upload', {
@@ -421,7 +426,6 @@
                     throw new Error(data.msg || '文件上传失败');
                 }
                 showToast('文件上传成功', 'success');
-                // 替换临时文件为真实数据
                 fileListCache = fileListCache.map(item =>
                     item.fileId === tempFile.fileId ? (data.data || item) : item
                 );
@@ -429,7 +433,6 @@
                 closeModal('uploadModal');
             })
             .catch(err => {
-                // 上传失败：移除临时文件
                 fileListCache = fileListCache.filter(item => item.fileId !== tempFile.fileId);
                 renderFileList(fileListCache);
                 showToast(`上传失败：${err.message}`, 'error');
@@ -438,7 +441,6 @@
             });
     }
 
-    // 删除文件：乐观更新
     function deleteFile(fileId) {
         if (!fileId || fileId.startsWith('temp_')) {
             showToast('文件ID无效', 'error');
@@ -448,12 +450,10 @@
             return;
         }
 
-        // 前端立即删除
         const oldList = [...fileListCache];
         fileListCache = fileListCache.filter(item => item.fileId !== fileId);
         renderFileList(fileListCache);
 
-        // 异步通知后端
         fetch(`/file/${fileId}`, {
             method: 'DELETE'
         })
@@ -465,7 +465,6 @@
                 showToast('文件删除成功', 'success');
             })
             .catch(err => {
-                // 删除失败：恢复原列表
                 fileListCache = oldList;
                 renderFileList(fileListCache);
                 showToast(`删除失败：${err.message}`, 'error');
@@ -473,7 +472,6 @@
             });
     }
 
-    // 搜索文件：本地过滤
     function searchFile() {
         const fileName = document.getElementById('fileSearchInput').value.trim();
         const filteredList = fileName
@@ -482,12 +480,12 @@
         renderFileList(filteredList);
     }
 
-    // ===================== 用户管理功能（修复数据处理逻辑） =====================
-    // 加载用户列表：统一数据校验
-    function listUserByPage(pageNum = 1, pageSize = 10) {
+    // ===================== 用户管理 =====================
+    function listUserByPage(pageNum = 1, pageSize = 5) {
         const userTableBody = document.getElementById('userTableBody');
-        // 初始显示暂无用户，避免加载中
-        userTableBody.innerHTML = '<tr><td colspan="5" class="empty-data">暂无用户</td></tr>';
+
+        isUserLoading = true;
+        userTableBody.innerHTML = '<tr><td colspan="5" class="empty-data">加载中...</td></tr>';
 
         fetch('/user/page', {
             method: 'POST',
@@ -503,25 +501,36 @@
                 return res.json();
             })
             .then(data => {
-                // 校验核心字段
                 if (!data || data.code !== 200) {
                     throw new Error(data.msg || '用户列表查询失败');
                 }
                 const pageResult = data.data || {};
                 const userList = Array.isArray(pageResult.list) ? pageResult.list : [];
+
+                // 缓存分页结果
+                userPageCache = {
+                    list: userList,
+                    pageNum: pageResult.pageNum || pageNum,
+                    pageSize: pageResult.pageSize || pageSize,
+                    total: pageResult.total || 0
+                };
+
                 renderUserList(userList);
-                renderPageControl(pageResult.pageNum || 1, pageResult.pageSize || 10, pageResult.total || 0);
+                renderPageControl(userPageCache.pageNum, userPageCache.pageSize, userPageCache.total);
             })
             .catch(err => {
                 showToast(`用户加载失败：${err.message}`, 'error');
+                userTableBody.innerHTML = '<tr><td colspan="5" class="empty-data">加载失败</td></tr>';
                 console.error('用户列表加载错误：', err);
+            })
+            .finally(() => {
+                isUserLoading = false;
             });
     }
 
-    // 渲染用户列表
     function renderUserList(userList) {
         const userTableBody = document.getElementById('userTableBody');
-        if (userList.length === 0) {
+        if (!userList || userList.length === 0) {
             userTableBody.innerHTML = '<tr><td colspan="5" class="empty-data">暂无用户</td></tr>';
             return;
         }
@@ -539,10 +548,9 @@
         `).join('');
     }
 
-    // 渲染分页控件
     function renderPageControl(pageNum, pageSize, total) {
         const pageControl = document.getElementById('pageControl');
-        const totalPages = Math.ceil(total / pageSize);
+        const totalPages = Math.max(1, Math.ceil(total / pageSize));
         pageControl.innerHTML = `
             <span>当前页：${pageNum} / 总页：${totalPages}，共${total}条数据</span>
             <button class="btn btn-primary" onclick="listUserByPage(${pageNum > 1 ? pageNum - 1 : 1}, ${pageSize})" ${pageNum === 1 ? 'disabled' : ''}>上一页</button>
@@ -550,7 +558,6 @@
         `;
     }
 
-    // 打开用户弹窗
     function openUserModal(type = 'add', userId = '') {
         const modal = document.getElementById('userModal');
         const modalTitle = document.getElementById('userModalTitle');
@@ -559,7 +566,6 @@
         const userAgeInput = document.getElementById('userAge');
         const userPhoneInput = document.getElementById('userPhone');
 
-        // 清空输入框
         userNameInput.value = '';
         userAgeInput.value = '';
         userPhoneInput.value = '';
@@ -570,7 +576,6 @@
         } else if (type === 'edit' && userId) {
             modalTitle.textContent = '编辑用户';
             userIdInput.value = userId;
-            // 查询用户详情
             fetch(`/user/${userId}`)
                 .then(res => res.json())
                 .then(data => {
@@ -591,14 +596,12 @@
         modal.style.display = 'flex';
     }
 
-    // 提交用户（新增/编辑）：统一数据处理
     function submitUser() {
         const userId = document.getElementById('userId').value;
         const userName = document.getElementById('userName').value.trim();
         const userAge = document.getElementById('userAge').value.trim();
         const userPhone = document.getElementById('userPhone').value.trim();
 
-        // 表单验证
         if (!userName || !userAge || !userPhone) {
             showToast('请填写完整信息', 'error');
             return;
@@ -612,7 +615,6 @@
             return;
         }
 
-        // 构造请求数据
         const userData = {
             username: userName,
             age: parseInt(userAge),
@@ -622,7 +624,6 @@
             userData.id = userId;
         }
 
-        // 区分新增/编辑
         const url = userId ? '/user/update' : '/user/add';
         const method = userId ? 'PUT' : 'POST';
 
@@ -645,7 +646,6 @@
                 }
                 showToast(userId ? '用户编辑成功' : '用户新增成功', 'success');
                 closeModal('userModal');
-                // 重新加载用户列表
                 listUserByPage(1, 10);
             })
             .catch(err => {
@@ -654,7 +654,6 @@
             });
     }
 
-    // 删除用户
     function deleteUser(id) {
         if (!id) {
             showToast('用户ID无效', 'error');
@@ -673,7 +672,6 @@
                     throw new Error(data.msg || '用户删除失败');
                 }
                 showToast('用户删除成功', 'success');
-                // 重新加载用户列表
                 listUserByPage(1, 10);
             })
             .catch(err => {
@@ -682,9 +680,18 @@
             });
     }
 
-    // 搜索用户
     function searchUser() {
         const usernameKeyword = document.getElementById('userSearchInput').value.trim();
+        if (!usernameKeyword) {
+            // 清空搜索关键字时，回到分页列表
+            if (userPageCache) {
+                renderUserList(userPageCache.list || []);
+                renderPageControl(userPageCache.pageNum, userPageCache.pageSize, userPageCache.total);
+            } else {
+                listUserByPage(1, 10);
+            }
+            return;
+        }
         fetch(`/user/search?usernameKeyword=${encodeURIComponent(usernameKeyword)}`)
             .then(res => res.json())
             .then(data => {
@@ -703,9 +710,7 @@
 
     // ===================== 页面初始化 =====================
     window.onload = function() {
-        // 首次加载文件列表
         loadFileList();
-        // 获取分片大小（非核心，失败不影响主流程）
         fetch('/file/chunk/size')
             .then(res => res.json())
             .then(data => {
