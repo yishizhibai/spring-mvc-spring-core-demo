@@ -24,6 +24,6 @@ public class FileInfo {
     private String userId;
     // 上传时间
     private Date uploadTime;
-    // 可选：文件二进制数据（若需要存储文件内容）
+    //文件二进制数据（存储文件内容）
     private byte[] fileData;
 }

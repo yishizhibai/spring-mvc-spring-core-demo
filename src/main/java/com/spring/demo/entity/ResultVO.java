@@ -1,8 +1,11 @@
 package com.spring.demo.entity;
-
+//统一的API响应结果封装类，用于统一前端接口返回格式
 public class ResultVO {
+    // 状态码，200表示成功，其他值表示错误
     private int code;
+    // 状态描述信息
     private String msg;
+    // 数据 payload，根据业务需求可以是任意类型
     private Object data;
 
     // 1. 无数据的成功返回

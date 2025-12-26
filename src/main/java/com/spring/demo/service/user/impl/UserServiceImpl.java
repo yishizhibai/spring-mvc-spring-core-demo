@@ -20,7 +20,7 @@ public class UserServiceImpl implements UserService {
         this.userMapper = userMapper;
     }
 
-    // 原有方法实现保留...
+    // UUID算法保证生成的ID在全球范围内唯一，避免ID冲突
     @Override
     public ResultVO addUser(User user) {
         try {
